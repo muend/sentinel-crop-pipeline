@@ -87,6 +87,16 @@ X = [np.load(r["train_path"]) for r in train]
 y = [np.load(r["label_path"].replace(".tif", ".npy")) for r in train]
 ```
 
+## 8. Review the run (optional dashboard)
+
+```bash
+pip install -e ".[dashboard]"
+streamlit run src/dashboard/app.py
+```
+
+Opens a local, read-only review UI: scene map + table, patch/label browser,
+split map, run history. It renders existing files only and makes no API calls.
+
 ## Troubleshooting
 
 - `CDSE_CLIENT_ID ... not set` — fill `.env` (discover works without it if you

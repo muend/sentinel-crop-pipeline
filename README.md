@@ -27,7 +27,7 @@ reusable for any Sentinel-2 crop pattern project.
 | 3 | Patch generation, COG + npy/TFRecord export, spatially-blocked 70/15/15 split | done |
 | 4 | AI scene review (SceneJudge: Gemini/Claude), vector LabelSource, CKS import | done |
 | 5 | CI, contributing guide, examples, release prep | done |
-| 6 | Local review dashboard (optional extra) | planned |
+| 6 | Local review dashboard (optional extra) | done |
 
 ## Install
 
@@ -170,6 +170,21 @@ data/
   patches/index.csv          patch_id, scene, split, spatial_block_id, paths
 logs/                        per-run JSON summaries
 ```
+
+## Review dashboard (optional)
+
+```bash
+pip install -e ".[dashboard]"
+streamlit run src/dashboard/app.py
+```
+
+A local, single-user, read-only Streamlit app: scene footprint map colored by
+selection outcome, filterable scene table (cloud %, SCL stats, judge verdicts),
+patch/label browser with overlay opacity, a split map that visually proves
+train/val/test blocks are spatially separated, and run history from
+`logs/run_*.json`. It only reads files already on disk — no CDSE/Gemini/Claude
+calls are made from the dashboard, so API keys are never exposed through it.
+The core pipeline does not depend on Streamlit.
 
 ## Examples and contributing
 

@@ -52,7 +52,8 @@ def cmd_discover(args) -> int:
     accepted, results, manual_review = [], [], 0
     for scene in scenes:
         res = selector.should_include(scene, aoi, skip_scl=args.skip_scl)
-        results.append(res.to_dict())
+        # footprint goes into the audit log so map views need no extra lookup
+        results.append({**res.to_dict(), "geometry": scene.geometry})
         manual_review += res.needs_manual_review
         logger.event("selection", scene=scene.id, accepted=res.accepted,
                      needs_manual_review=res.needs_manual_review,

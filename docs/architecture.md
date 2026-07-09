@@ -39,6 +39,9 @@ src/
     vector.py               GeoJSON/Shapefile parcels
     cks.py                  CKS manual import connector (no scraping)
     rasterize.py            polygons -> patch-aligned uint8 masks
+  dashboard/
+    data.py                 read-only loaders/parsers (no Streamlit import)
+    app.py                  Streamlit UI (optional extra, run via streamlit)
   utils/                    config, .env, geo helpers, run logger
   cli.py                    discover | download | preprocess | patch | label | run-all
 ```
@@ -74,6 +77,12 @@ src/
 - **Selection transparency.** Every accept/reject decision, with per-check
   notes, judge verdict/confidence and needs_manual_review flags, lands in
   `logs/selection_results.json` — a methodology audit trail for reports.
+- **Dashboard is read-only and offline.** The optional Streamlit app renders
+  only files already under `logs/` and `data/` — no live CDSE/judge calls, so
+  API keys can never leak through a dashboard session. Write-back (recording
+  manual review decisions) is deliberately deferred to a future 6b phase.
+  Parsing lives in `dashboard/data.py` without Streamlit imports, so it is
+  unit-tested without the `[dashboard]` extra.
 - **STAC endpoint.** `https://stac.dataspace.copernicus.eu/v1` (collection
   `sentinel-2-l2a`), verified against the live catalog. Cloud cover is
   re-filtered client-side to tolerate deployments with partial query support.

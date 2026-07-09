@@ -31,6 +31,7 @@ tfrecord = ["tensorflow>=2.13"]
 ai = ["google-genai>=1.0"]        # GeminiFlashJudge (default layer-2 judge)
 claude = ["anthropic>=0.25"]      # ClaudeJudge (optional layer-2 judge)
 shapefile = ["fiona>=1.9"]        # .shp label input; GeoJSON needs nothing extra
+dashboard = ["streamlit>=1.49", "pydeck>=0.8", "pandas>=2.0"]  # local review UI
 dev = ["pytest>=7.0"]
 
 [tool.setuptools.packages.find]

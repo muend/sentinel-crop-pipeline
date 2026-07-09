@@ -87,6 +87,8 @@ def test_cli_label_fails_cleanly_without_patches(tmp_path, base_cfg):
         base_cfg["labeling"],
         vector_path=str(tmp_path / "labels/parcels.geojson"),
     )
+    # keep test run logs out of the real logs/ dir
+    cfg["logging"] = {"dir": str(tmp_path / "logs"), "level": "INFO"}
 
     config_path = tmp_path / "config.yaml"
     config_path.write_text(yaml.safe_dump(cfg))
