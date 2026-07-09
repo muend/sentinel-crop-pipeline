@@ -23,4 +23,12 @@ dependencies = [
 gee = ["earthengine-api>=0.1.400"]
 tfrecord = ["tensorflow>=2.13"]
 ai = ["google-genai>=1.0"]        # GeminiFlashJudge (default layer-2 judge)
-claude = ["anthropic>=0.25"]      # ClaudeJudge (optional layer-2 judge
+claude = ["anthropic>=0.25"]      # ClaudeJudge (optional layer-2 judge)
+shapefile = ["fiona>=1.9"]        # .shp label input; GeoJSON needs nothing extra
+dev = ["pytest>=7.0"]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
