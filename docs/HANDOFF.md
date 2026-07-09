@@ -28,19 +28,30 @@ synthetic rasters). Live CDSE download/judge paths NOT yet exercised with real
 credentials - first live `discover` run by the project owner is the immediate
 next step.
 
+## Live validation results (2026-07-09, DONE)
+
+Live discover ran successfully with real CDSE credentials on the interim AOI:
+- STAC search: 48 L2A scenes (2025-04-01..2025-10-31, all tile T35SMC,
+  ~5-10 day cadence - good time-series density)
+- Layer 1 with SCL pixel check: 47 accepted, 1 rejected
+  (S2C 2025-10-28: scl_invalid=49.1% > 30% - the SCL check caught a scene
+  that passed the metadata cloud filter, exactly as designed)
+- Thresholds (cloud 20%, overlap 60%, scl 30%) validated; no recalibration
+  needed for now.
+- Owner's .env has CDSE credentials AND GEMINI_API_KEY (local only, gitignored,
+  never commit). Config still judge_provider: none; all accepted scenes were
+  flagged needs_manual_review as expected. Enabling Gemini judge requires
+  `pip install -e ".[ai]"` + config change - GeminiFlashJudge is NOT yet
+  live-tested.
+
 ## Immediate next steps (in order)
 
-1. Owner runs live discovery (has CDSE account):
-   - fill CDSE_CLIENT_ID/SECRET in .env (OAuth client from
-     https://shapps.dataspace.copernicus.eu/dashboard/)
-   - `python -m src.cli discover --config config/default.yaml --skip-scl` (free)
-   - then without --skip-scl (per-scene SCL check via Process API)
-   - share logs/run_discover_*.json summary -> calibrate thresholds
-     (search.max_cloud_cover_pct 20, aoi.min_scene_overlap_pct 60,
-     scl_filter.max_invalid_pct 30)
-2. First live `download --yes` (interim AOI is ~3060x2660 px at 10 m ->
-   tiled into 4 Process API requests and mosaicked; ~65 MB/scene estimate)
-3. Phase 5, then Phase 6.
+1. First live download on a SUBSET (full run = 47 scenes x ~81 MB = ~3.8 GB;
+   don't start with that). Narrow time.start/end to one month (~6 scenes,
+   ~0.5 GB), re-run discover, then `download --yes`, `preprocess`, `patch` -
+   verifies the tiled download+mosaic path end to end.
+2. Optionally live-test GeminiFlashJudge on the subset (judge_provider: gemini).
+3. Phase 5 (release prep), then Phase 6 (dashboard, spec below).
 
 ## Phase 6 spec (agreed, do not re-negotiate)
 
