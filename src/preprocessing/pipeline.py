@@ -62,7 +62,9 @@ def preprocess_scene(in_path: str | Path, out_path: str | Path, cfg: dict) -> li
     bands = np.concatenate([bands, mask.astype(np.float32)[None]], axis=0)
     out_names.append("MASK")
 
-    profile.update(count=len(out_names), dtype="float32", nodata=None)
+    profile.update(count=len(out_names), dtype="float32", nodata=None,
+                   # source profile carries block sizes; keep them valid
+                   tiled=True, blockxsize=256, blockysize=256)
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with rasterio.open(out_path, "w", **profile) as dst:

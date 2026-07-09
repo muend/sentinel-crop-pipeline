@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sentinel-crop-pipeline"
-version = "0.1.0"
+version = "0.2.0"
 description = "Sentinel-2 data preparation pipeline for crop classification: discovery, download, preprocessing, U-Net-ready patches"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -19,6 +19,12 @@ dependencies = [
     "PyYAML>=6.0",
 ]
 
+[project.urls]
+Repository = "https://github.com/muend/sentinel-crop-pipeline"
+
+[project.scripts]
+sentinel-crop = "src.cli:main"
+
 [project.optional-dependencies]
 gee = ["earthengine-api>=0.1.400"]
 tfrecord = ["tensorflow>=2.13"]
@@ -32,3 +38,7 @@ include = ["src*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    # rasterio internals set arr.shape directly; deprecated in NumPy 2.5
+    "ignore:Setting the shape on a NumPy array has been deprecated:DeprecationWarning",
+]

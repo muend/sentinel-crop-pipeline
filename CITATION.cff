@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "sentinel-crop-pipeline: a reproducible Sentinel-2 data preparation pipeline for crop classification"
+type: software
+authors:
+  - family-names: Duran
+    given-names: Muhammed Enes
+repository-code: "https://github.com/muend/sentinel-crop-pipeline"
+license: Apache-2.0
+version: 0.2.0
+date-released: 2026-07-09
+keywords:
+  - sentinel-2
+  - copernicus
+  - remote-sensing
+  - crop-classification
+  - deep-learning
+  - u-net

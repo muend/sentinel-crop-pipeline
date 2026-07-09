@@ -1,0 +1,64 @@
+[
+  {
+    "scene_id": "S2C_MSIL2A_20250630T085621_N0511_R007_T35SMC_20250630T143419",
+    "accepted": true,
+    "checks": {
+      "cloud_metadata": {
+        "passed": true,
+        "note": "cloud_cover=0.0% (limit 20%)"
+      },
+      "date_window": {
+        "passed": true,
+        "note": "2025-06-30 in window 2025-06-01..2025-06-30"
+      },
+      "aoi_overlap": {
+        "passed": true,
+        "note": "aoi_overlap=100.0% (min 60%)"
+      },
+      "scl_stats": {
+        "passed": true,
+        "note": "scl_invalid=0.0% (limit 30%)"
+      },
+      "ai_review": {
+        "passed": true,
+        "note": "ai review disabled (judge_provider: none)"
+      }
+    },
+    "reasons": [],
+    "ai_verdict": null,
+    "ai_confidence": null,
+    "needs_manual_review": true
+  },
+  {
+    "scene_id": "S2C_MSIL2A_20251028T090041_N0511_R007_T35SMC_20251028T121254",
+    "accepted": false,
+    "checks": {
+      "cloud_metadata": {
+        "passed": true,
+        "note": "cloud_cover=18.4% (limit 20%)"
+      },
+      "date_window": {
+        "passed": true,
+        "note": "2025-10-28 in window 2025-04-01..2025-10-31"
+      },
+      "aoi_overlap": {
+        "passed": true,
+        "note": "aoi_overlap=100.0% (min 60%)"
+      },
+      "scl_stats": {
+        "passed": false,
+        "note": "scl_invalid=49.1% (limit 30%)"
+      },
+      "ai_review": {
+        "passed": true,
+        "note": "ai review disabled (judge_provider: none)"
+      }
+    },
+    "reasons": [
+      "scl_stats: scl_invalid=49.1% (limit 30%)"
+    ],
+    "ai_verdict": null,
+    "ai_confidence": null,
+    "needs_manual_review": false
+  }
+]

@@ -10,8 +10,10 @@ aoi:
   min_scene_overlap_pct: 60             # min % of AOI covered by scene footprint
 
 time:
-  start: "2025-04-01"
-  end: "2025-10-31"
+  # Temporarily narrowed to one month for the first live end-to-end run
+  # (subset validation). Restore 2025-04-01..2025-10-31 for the full season.
+  start: "2025-06-01"
+  end: "2025-06-30"
   crop: null                   # key from crop_calendar.yaml; null = use start/end as-is
   crop_calendar: config/crop_calendar.yaml
 

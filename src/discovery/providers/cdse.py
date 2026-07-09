@@ -257,7 +257,10 @@ class CdseProvider(DataProvider):
                 profile = datasets[0].profile
                 profile.update(height=mosaic.shape[1], width=mosaic.shape[2],
                                transform=transform, driver="GTiff",
-                               compress="deflate")
+                               compress="deflate",
+                               # source profile carries block sizes; keep them
+                               # valid by writing tiled output
+                               tiled=True, blockxsize=256, blockysize=256)
                 with rasterio.open(out_path, "w", **profile) as dst:
                     dst.write(mosaic)
         finally:

@@ -9,6 +9,7 @@ data/raw/
 data/interim/
 data/patches/
 data/catalog/
+data/quicklooks/
 logs/
 .ipynb_checkpoints/
 docs/HANDOFF.md

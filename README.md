@@ -1,10 +1,19 @@
 # sentinel-crop-pipeline
 
-Automates Sentinel-2 data preparation for crop classification with CNN/U-Net:
-scene discovery, AOI-cropped download, cloud masking, band stacking, spectral
-indices, fixed-size training patches, and ground-truth label masks.
-Config-driven; change the AOI, dates, crop, bands, or patch size in
-`config/default.yaml` without touching code.
+![CI](https://github.com/muend/sentinel-crop-pipeline/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License](https://img.shields.io/badge/license-Apache--2.0-green)
+
+A reproducible Sentinel-2 data preparation pipeline for crop classification
+and CNN/U-Net training: scene discovery, AOI-cropped download, cloud masking,
+band stacking, spectral indices, fixed-size training patches, and ground-truth
+label masks. Config-driven; change the AOI, dates, crop, bands, or patch size
+in `config/default.yaml` without touching code.
+
+Scope: this repository prepares training-ready data. Model training and
+evaluation are done downstream by the consuming project; the patch/label
+output format (float32 arrays + MASK band + spatially blocked splits) is
+designed for that.
 
 Built for a TUBITAK 2209-A crop mapping study (Izmir/Urla), designed to be
 reusable for any Sentinel-2 crop pattern project.
@@ -17,7 +26,8 @@ reusable for any Sentinel-2 crop pattern project.
 | 2 | SCL masking, band stack, indices, normalization | done |
 | 3 | Patch generation, COG + npy/TFRecord export, spatially-blocked 70/15/15 split | done |
 | 4 | AI scene review (SceneJudge: Gemini/Claude), vector LabelSource, CKS import | done |
-| 5 | Docs polish, GitHub release prep | in progress |
+| 5 | CI, contributing guide, examples, release prep | done |
+| 6 | Local review dashboard (optional extra) | planned |
 
 ## Install
 
@@ -51,9 +61,13 @@ python -m src.cli patch --config config/default.yaml
 # 5. rasterize field polygons to patch-aligned label masks
 python -m src.cli label --config config/default.yaml
 
-# or end to end:
+# or stages 1-4 in sequence (label is NOT included: it needs parcel data
+# that usually arrives later; run it separately when ready):
 python -m src.cli run-all --config config/default.yaml
 ```
+
+`pip install -e .` also provides the `sentinel-crop` console command, e.g.
+`sentinel-crop discover --config config/default.yaml`.
 
 Each stage is independent: it reads the previous stage's output from disk, so a
 failure in one stage does not affect the others. Every run writes a summary to
@@ -156,6 +170,13 @@ data/
   patches/index.csv          patch_id, scene, split, spatial_block_id, paths
 logs/                        per-run JSON summaries
 ```
+
+## Examples and contributing
+
+`examples/` has reference outputs (selection audit log, patch index) from a
+real Urla run and synthetic demo parcels for the label stage. Contributions:
+see [CONTRIBUTING.md](CONTRIBUTING.md). To cite this software, see
+[CITATION.cff](CITATION.cff).
 
 ## License
 

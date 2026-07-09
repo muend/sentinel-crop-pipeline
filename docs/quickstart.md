@@ -78,11 +78,13 @@ python -m src.cli label --config config/default.yaml
   `spatial_block_id` columns
 
 ```python
-import numpy as np, pandas as pd
-idx = pd.read_csv("data/patches/index.csv")
-train = idx[idx.split == "train"]
-X = [np.load(p) for p in train.train_path]
-y = [np.load(p.replace(".tif", ".npy")) for p in train.label_path]
+import csv
+import numpy as np
+
+with open("data/patches/index.csv", newline="") as f:
+    train = [r for r in csv.DictReader(f) if r["split"] == "train"]
+X = [np.load(r["train_path"]) for r in train]
+y = [np.load(r["label_path"].replace(".tif", ".npy")) for r in train]
 ```
 
 ## Troubleshooting

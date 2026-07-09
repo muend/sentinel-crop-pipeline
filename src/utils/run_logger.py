@@ -51,5 +51,7 @@ class RunLogger:
         }
         out = self.log_dir / f"run_{self.stage}_{self.started.strftime('%Y%m%dT%H%M%S')}.json"
         out.write_text(json.dumps(payload, indent=2, default=str))
+        if self.summary:
+            self.log.info("summary %s", self.summary)
         self.log.info("run log written: %s", out)
         return out

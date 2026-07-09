@@ -74,6 +74,21 @@ def test_full_pipeline_mock(tmp_path, base_cfg):
     assert splits <= {"train", "val", "test"}
 
 
-def test_cli_label_fails_cleanly_without_patches():
+def test_cli_label_fails_cleanly_without_patches(tmp_path, base_cfg):
+    import yaml
     from src.cli import main
-    # no patch index in a fresh checkout: exit
+
+    cfg = dict(base_cfg)
+    cfg["patching"] = dict(
+        base_cfg["patching"],
+        index_file=str(tmp_path / "missing_index.csv"),
+    )
+    cfg["labeling"] = dict(
+        base_cfg["labeling"],
+        vector_path=str(tmp_path / "labels/parcels.geojson"),
+    )
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(yaml.safe_dump(cfg))
+
+    assert main(["label", "--config", str(config_path)]) == 1
