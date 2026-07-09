@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Urla district approx bbox - INTERIM PLACEHOLDER",
+        "status": "interim",
+        "note": "Simplified rectangle covering Urla district (Izmir). NOT the official administrative boundary. Replace this file with real field parcels or an official boundary export when available; no code change needed (aoi.path in config/default.yaml)."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [26.60, 38.19],
+          [26.95, 38.19],
+          [26.95, 38.43],
+          [26.60, 38.43],
+          [26.60, 38.19]
+        ]]
+      }
+    }
+  ]
+}

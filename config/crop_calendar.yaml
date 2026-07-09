@@ -1,0 +1,21 @@
+# Sowing-harvest windows (month-day) used when time.crop is set.
+# Approximate values for the Aegean region (Izmir/Urla, Menemen, K. Menderes);
+# adjust per study area.
+tomato:
+  sowing: "04-15"
+  harvest: "09-30"
+maize:
+  sowing: "04-01"
+  harvest: "10-15"
+cotton:
+  sowing: "04-15"
+  harvest: "10-31"
+vineyard:            # perennial; window covers the green season
+  sowing: "04-01"
+  harvest: "10-15"
+citrus:              # evergreen; wide window
+  sowing: "03-01"
+  harvest: "12-15"
+wheat:               # winter crop: window crosses the year boundary
+  sowing: "11-01"
+  harvest: "06-30"

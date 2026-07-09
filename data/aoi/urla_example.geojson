@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Urla example AOI" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [26.65, 38.25],
+          [26.85, 38.25],
+          [26.85, 38.36],
+          [26.65, 38.36],
+          [26.65, 38.25]
+        ]]
+      }
+    }
+  ]
+}

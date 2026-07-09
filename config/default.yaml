@@ -1,0 +1,75 @@
+# Main pipeline config. Change AOI/dates/bands here, not in code.
+project_name: sentinel-crop-pipeline
+data_provider: cdse            # cdse | gee
+
+aoi:
+  # INTERIM: simplified Urla district bbox, not the official boundary.
+  # Replace with real field parcels / official boundary when available;
+  # only this path needs to change.
+  path: data/aoi/urla_ilce_interim.geojson   # polygon(s), EPSG:4326
+  min_scene_overlap_pct: 60             # min % of AOI covered by scene footprint
+
+time:
+  start: "2025-04-01"
+  end: "2025-10-31"
+  crop: null                   # key from crop_calendar.yaml; null = use start/end as-is
+  crop_calendar: config/crop_calendar.yaml
+
+search:
+  collection: sentinel-2-l2a
+  max_cloud_cover_pct: 20      # scene metadata threshold (layer-1 pre-filter)
+
+scl_filter:
+  enabled: true
+  max_invalid_pct: 30          # pixel-based cloud/shadow/snow limit within AOI
+  invalid_classes: [0, 1, 3, 8, 9, 10, 11]   # SCL: nodata, defective, shadow, clouds, cirrus, snow
+
+ai_review:                     # layer-2 scene review (optional)
+  judge_provider: none         # gemini | claude | none
+  model: gemini-3.1-flash-lite # config-driven: Google's lineup changes often
+  claude_model: claude-haiku-4-5
+  min_confidence: 0.6          # reject only if judge is at least this confident
+
+bands:
+  base: [B02, B03, B04, B08]
+  extra: []                    # e.g. [B05, B06, B07, B8A, B11, B12]
+
+download:
+  method: process_api          # process_api (AOI-cropped, recommended) | odata (full SAFE zip)
+  resolution_m: 10
+  max_auto_size_mb: 200        # above this per-scene estimate, require --yes
+  out_dir: data/raw
+
+preprocessing:
+  resampling: bilinear         # bilinear | cubic (for 20m -> 10m bands)
+  normalization: reflectance   # reflectance (DN/10000) | minmax (per band)
+  indices: [NDVI, NDRE]        # NDVI | NDRE | NDWI (skipped if required band missing)
+  out_dir: data/interim
+
+patching:
+  patch_size: 256
+  stride: 256                  # stride == patch_size -> no overlap; e.g. 192 -> 25% overlap
+  block_factor: 4              # spatial block side = block_factor * patch_size px
+  max_invalid_frac: 0.4        # drop patches with more invalid pixels than this
+  export_format: npy           # npy | tfrecord
+  cog_dir: data/patches/cog
+  train_dir: data/patches/train
+  index_file: data/patches/index.csv
+
+labeling:
+  source: vector               # vector (GeoJSON/Shapefile) | cks (manual import dir)
+  vector_path: data/labels/parcels.geojson
+  cks_import_dir: data/raw/cks_import
+  attribute: crop_type         # feature property holding the crop label
+  out_dir: data/patches/labels
+  all_touched: false           # rasterize: burn pixels touched by polygon edges
+
+split:                         # group-aware over spatial blocks (see docs)
+  train: 0.70
+  val: 0.15
+  test: 0.15
+  seed: 42
+
+logging:
+  dir: logs
+  level: INFO

@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+data/raw/
+data/interim/
+data/patches/
+data/catalog/
+logs/
+.ipynb_checkpoints/
