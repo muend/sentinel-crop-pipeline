@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 from shapely.geometry import box, mapping
 
-from src.discovery.providers.base import Scene
-from src.discovery.scene_selector import SceneSelector
+from sentinel_crop_pipeline.discovery.providers.base import Scene
+from sentinel_crop_pipeline.discovery.scene_selector import SceneSelector
 
 AOI = box(26.65, 38.25, 26.85, 38.36)
 CALENDAR = {"tomato": {"sowing": "04-15", "harvest": "09-30"},

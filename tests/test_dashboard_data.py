@@ -3,7 +3,7 @@ plain file parsing."""
 
 import json
 
-from src.dashboard import data as d
+from sentinel_crop_pipeline.dashboard import data as d
 
 
 def test_parse_note_pct():
@@ -62,3 +62,18 @@ def test_load_run_logs_newest_first_and_skips_bad_json(tmp_path):
     logs = d.load_run_logs(tmp_path)
     assert [r["stage"] for r in logs] == ["patch", "discover"]
     assert logs[1]["summary"] == {"found": 3}
+
+
+def test_geojson_center():
+    fc = {"type": "FeatureCollection", "features": [{
+        "type": "Feature",
+        "geometry": {"type": "Polygon",
+                     "coordinates": [[[26.0, 38.0], [27.0, 38.0],
+                                      [27.0, 39.0], [26.0, 39.0],
+                                      [26.0, 38.0]]]}}]}
+    assert d.geojson_center(fc) == (38.5, 26.5)
+    # dashboard split-map records use a "polygon" key
+    polys = [{"polygon": [[26.0, 38.0], [26.2, 38.0], [26.2, 38.2]]}]
+    lat, lon = d.geojson_center(polys)
+    assert (round(lat, 2), round(lon, 2)) == (38.1, 26.1)
+    assert d.geojson_center({}) is None

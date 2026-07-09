@@ -3,9 +3,9 @@
 import pytest
 from shapely.geometry import box
 
-from src.discovery.judge import (JudgeResult, SceneJudge, get_judge,
+from sentinel_crop_pipeline.discovery.judge import (JudgeResult, SceneJudge, get_judge,
                                  parse_verdict, with_backoff)
-from src.discovery.scene_selector import SceneSelector
+from sentinel_crop_pipeline.discovery.scene_selector import SceneSelector
 from tests.test_scene_selector import AOI, make_scene
 
 

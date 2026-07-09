@@ -1,8 +1,8 @@
 import pytest
 from shapely.geometry import box, mapping
 
-from src.discovery.providers.base import ProviderError
-from src.discovery.providers.cdse import (MAX_PROCESS_DIM, CdseProvider,
+from sentinel_crop_pipeline.discovery.providers.base import ProviderError
+from sentinel_crop_pipeline.discovery.providers.cdse import (MAX_PROCESS_DIM, CdseProvider,
                                           _evalscript, _tile_grid)
 
 AOI = box(26.65, 38.25, 26.85, 38.36)

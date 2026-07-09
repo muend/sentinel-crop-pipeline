@@ -89,7 +89,7 @@ def run_labeling(cfg: dict, logger=None) -> list[dict]:
         with rasterio.open(label_path, "w", **profile) as dst:
             dst.write(mask[None])
         np.save(str(label_path).replace(".tif", ".npy"), mask)
-        rec["label_path"] = str(label_path)
+        rec["label_path"] = label_path.as_posix()   # portable index paths
         labeled += 1
         if mask.max() == 0:
             empty += 1

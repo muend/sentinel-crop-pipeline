@@ -3,11 +3,11 @@ import pytest
 import rasterio
 from rasterio.transform import from_origin
 
-from src.preprocessing import normalize
-from src.preprocessing.indices import ndvi
-from src.preprocessing.pipeline import preprocess_scene
-from src.preprocessing.resample import resample_to_grid
-from src.preprocessing.scl_mask import invalid_fraction, valid_mask
+from sentinel_crop_pipeline.preprocessing import normalize
+from sentinel_crop_pipeline.preprocessing.indices import ndvi
+from sentinel_crop_pipeline.preprocessing.pipeline import preprocess_scene
+from sentinel_crop_pipeline.preprocessing.resample import resample_to_grid
+from sentinel_crop_pipeline.preprocessing.scl_mask import invalid_fraction, valid_mask
 from tests.conftest import write_raw_scene
 
 

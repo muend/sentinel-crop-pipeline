@@ -45,7 +45,7 @@ month-day pairs (windows crossing new year, e.g. wheat, are handled).
 ## 5. First live run: discover
 
 ```bash
-python -m src.cli discover --config config/default.yaml
+python -m sentinel_crop_pipeline.cli discover --config config/default.yaml
 ```
 
 Console output and `logs/run_discover_*.json` report: scenes found, accepted,
@@ -60,11 +60,11 @@ scene (needs credentials). Use `--skip-scl` for a free, metadata-only pass.
 ## 6. Download, preprocess, patch, label
 
 ```bash
-python -m src.cli download --config config/default.yaml     # add --yes above size threshold
-python -m src.cli preprocess --config config/default.yaml
-python -m src.cli patch --config config/default.yaml
+python -m sentinel_crop_pipeline.cli download --config config/default.yaml     # add --yes above size threshold
+python -m sentinel_crop_pipeline.cli preprocess --config config/default.yaml
+python -m sentinel_crop_pipeline.cli patch --config config/default.yaml
 # when you have parcel polygons (labeling.vector_path):
-python -m src.cli label --config config/default.yaml
+python -m sentinel_crop_pipeline.cli label --config config/default.yaml
 ```
 
 ## 7. Use the patches
@@ -91,7 +91,7 @@ y = [np.load(r["label_path"].replace(".tif", ".npy")) for r in train]
 
 ```bash
 pip install -e ".[dashboard]"
-streamlit run src/dashboard/app.py
+streamlit run src/sentinel_crop_pipeline/dashboard/app.py
 ```
 
 Opens a local, read-only review UI: scene map + table, patch/label browser,

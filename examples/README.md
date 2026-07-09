@@ -16,6 +16,6 @@ running it, plus demo input for the label stage.
   try the label stage:
 
 ```bash
-python -m src.cli label --config config/default.yaml
+python -m sentinel_crop_pipeline.cli label --config config/default.yaml
 # after setting labeling.vector_path: examples/sample_parcels.geojson
 ```

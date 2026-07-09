@@ -23,7 +23,7 @@ import requests
 from shapely.geometry import mapping
 from shapely.ops import transform as shp_transform
 
-from src.utils.geo import bbox_dims_px, utm_epsg_for
+from sentinel_crop_pipeline.utils.geo import bbox_dims_px, utm_epsg_for
 from .base import DataProvider, ProviderError, Scene
 
 STAC_SEARCH_URL = "https://stac.dataspace.copernicus.eu/v1/search"

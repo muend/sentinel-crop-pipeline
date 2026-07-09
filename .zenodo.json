@@ -1,0 +1,23 @@
+{
+  "title": "sentinel-crop-pipeline: a reproducible Sentinel-2 data preparation pipeline for crop classification",
+  "description": "Config-driven pipeline that turns Copernicus/CDSE Sentinel-2 L2A imagery into CNN/U-Net-ready training data: scene discovery with rule-based and optional AI review, AOI-cropped downloads, SCL cloud masking, spectral indices, COG/npy/TFRecord patch export, spatially blocked train/val/test splits, and patch-aligned ground-truth label masks. Developed for a TUBITAK 2209-A crop mapping study (Izmir/Urla, Turkey).",
+  "creators": [
+    {
+      "name": "Duran, Muhammed Enes",
+      "affiliation": "Izmir Institute of Technology"
+    }
+  ],
+  "license": "Apache-2.0",
+  "upload_type": "software",
+  "access_right": "open",
+  "keywords": [
+    "Sentinel-2",
+    "Copernicus",
+    "remote sensing",
+    "crop classification",
+    "deep learning",
+    "U-Net",
+    "data pipeline",
+    "agriculture"
+  ]
+}

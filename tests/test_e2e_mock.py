@@ -4,10 +4,10 @@
 import numpy as np
 from shapely.geometry import box, mapping
 
-from src.discovery.providers.base import DataProvider, Scene
-from src.discovery.scene_selector import SceneSelector
-from src.patching.tiler import run_patching
-from src.preprocessing.pipeline import run_preprocess
+from sentinel_crop_pipeline.discovery.providers.base import DataProvider, Scene
+from sentinel_crop_pipeline.discovery.scene_selector import SceneSelector
+from sentinel_crop_pipeline.patching.tiler import run_patching
+from sentinel_crop_pipeline.preprocessing.pipeline import run_preprocess
 from tests.conftest import write_raw_scene
 
 AOI = box(26.65, 38.25, 26.85, 38.36)
@@ -76,7 +76,7 @@ def test_full_pipeline_mock(tmp_path, base_cfg):
 
 def test_cli_label_fails_cleanly_without_patches(tmp_path, base_cfg):
     import yaml
-    from src.cli import main
+    from sentinel_crop_pipeline.cli import main
 
     cfg = dict(base_cfg)
     cfg["patching"] = dict(

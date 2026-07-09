@@ -21,6 +21,31 @@ def parse_note_pct(note: str | None) -> float | None:
     return float(m.group(1)) if m else None
 
 
+def geojson_center(obj) -> tuple[float, float] | None:
+    """(lat, lon) of the bbox center of any GeoJSON-like structure, so map
+    views follow the configured AOI instead of a hardcoded location."""
+    xs: list[float] = []
+    ys: list[float] = []
+
+    def walk(o):
+        if isinstance(o, (list, tuple)):
+            if len(o) >= 2 and all(isinstance(v, (int, float)) for v in o[:2]):
+                xs.append(float(o[0]))
+                ys.append(float(o[1]))
+            else:
+                for item in o:
+                    walk(item)
+        elif isinstance(o, dict):
+            for key in ("features", "geometry", "coordinates", "polygon"):
+                if key in o:
+                    walk(o[key])
+
+    walk(obj)
+    if not xs:
+        return None
+    return (min(ys) + max(ys)) / 2, (min(xs) + max(xs)) / 2
+
+
 def scene_status(entry: dict) -> str:
     """rejected | needs_manual_review | accepted (manual-review implies accepted)."""
     if not entry.get("accepted"):

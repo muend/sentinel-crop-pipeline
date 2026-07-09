@@ -19,7 +19,7 @@ import numpy as np
 import rasterio
 from rasterio.windows import Window
 
-from src.patching.export import write_cog, write_npy, write_tfrecord
+from sentinel_crop_pipeline.patching.export import write_cog, write_npy, write_tfrecord
 
 SPLITS = ("train", "val", "test")
 
@@ -133,7 +133,10 @@ def run_patching(cfg: dict, logger=None) -> list[dict]:
                 records.append({
                     "patch_id": pid, "scene": tif.stem,
                     "spatial_block_id": block,
-                    "cog_path": str(cog_path), "train_path": str(train_path),
+                    # POSIX separators so the index stays portable to
+                    # Linux/macOS training environments
+                    "cog_path": Path(cog_path).as_posix(),
+                    "train_path": Path(train_path).as_posix(),
                     "invalid_frac": round(invalid, 4),
                 })
 

@@ -31,10 +31,18 @@ reusable for any Sentinel-2 crop pattern project.
 
 ## Install
 
+From source (development):
+
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 cp .env.example .env    # then fill in CDSE credentials
+```
+
+From PyPI (after the first published release):
+
+```bash
+pip install sentinel-crop-pipeline      # or: uv pip install sentinel-crop-pipeline
 ```
 
 CDSE credentials: create a free account at https://dataspace.copernicus.eu/,
@@ -47,27 +55,31 @@ require them.
 
 ```bash
 # 1. find candidate scenes, apply selection rules, write data/catalog/scenes.json
-python -m src.cli discover --config config/default.yaml
+python -m sentinel_crop_pipeline.cli discover --config config/default.yaml
 
 # 2. download AOI-cropped stacks (reports estimated size first)
-python -m src.cli download --config config/default.yaml
+python -m sentinel_crop_pipeline.cli download --config config/default.yaml
 
 # 3. mask clouds (SCL), normalize, compute NDVI/NDRE -> data/interim/
-python -m src.cli preprocess --config config/default.yaml
+python -m sentinel_crop_pipeline.cli preprocess --config config/default.yaml
 
 # 4. cut 256x256 patches -> COG + npy + data/patches/index.csv with splits
-python -m src.cli patch --config config/default.yaml
+python -m sentinel_crop_pipeline.cli patch --config config/default.yaml
 
 # 5. rasterize field polygons to patch-aligned label masks
-python -m src.cli label --config config/default.yaml
+python -m sentinel_crop_pipeline.cli label --config config/default.yaml
 
 # or stages 1-4 in sequence (label is NOT included: it needs parcel data
 # that usually arrives later; run it separately when ready):
-python -m src.cli run-all --config config/default.yaml
+python -m sentinel_crop_pipeline.cli run-all --config config/default.yaml
 ```
 
 `pip install -e .` also provides the `sentinel-crop` console command, e.g.
 `sentinel-crop discover --config config/default.yaml`.
+
+For a quick low-volume trial (~0.5 GB instead of a full season), use
+`--config config/urla_june_subset.yaml` — the exact run documented in
+[docs/validation-run.md](docs/validation-run.md).
 
 Each stage is independent: it reads the previous stage's output from disk, so a
 failure in one stage does not affect the others. Every run writes a summary to
@@ -175,7 +187,7 @@ logs/                        per-run JSON summaries
 
 ```bash
 pip install -e ".[dashboard]"
-streamlit run src/dashboard/app.py
+streamlit run src/sentinel_crop_pipeline/dashboard/app.py
 ```
 
 A local, single-user, read-only Streamlit app: scene footprint map colored by

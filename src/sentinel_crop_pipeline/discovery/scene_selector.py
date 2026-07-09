@@ -17,8 +17,8 @@ from datetime import date, datetime
 
 from shapely.geometry import shape
 
-from src.preprocessing.scl_mask import DEFAULT_INVALID_CLASSES, invalid_fraction
-from src.utils.geo import overlap_pct
+from sentinel_crop_pipeline.preprocessing.scl_mask import DEFAULT_INVALID_CLASSES, invalid_fraction
+from sentinel_crop_pipeline.utils.geo import overlap_pct
 from .providers.base import Scene
 
 log = logging.getLogger("selector")

@@ -17,7 +17,7 @@ fixed independently.
 ## Modules
 
 ```
-src/
+src/sentinel_crop_pipeline/
   discovery/
     providers/base.py       DataProvider ABC + Scene dataclass
     providers/cdse.py       STAC search, OAuth2, tiled Process API, OData fallback

@@ -28,14 +28,14 @@ python -m pytest       # must pass before and after your change; no network need
 
 ## Adding a data provider
 
-Implement `DataProvider` (`src/discovery/providers/base.py`): `search()`,
+Implement `DataProvider` (`src/sentinel_crop_pipeline/discovery/providers/base.py`): `search()`,
 `download()`, `get_scl_mask()`. Register it in `providers/registry.py` and add
 tests with mocked responses. Heavy SDKs go in an optional extra in
 `pyproject.toml`, with graceful degradation when the extra is missing.
 
 ## Adding a scene judge
 
-Implement `SceneJudge` (`src/discovery/judge.py`): `evaluate(scene, preview)
+Implement `SceneJudge` (`src/sentinel_crop_pipeline/discovery/judge.py`): `evaluate(scene, preview)
 -> JudgeResult`. Any failure (missing key, quota, timeout) must degrade to
 `needs_manual_review`, never stop the pipeline or auto-reject a scene.
 

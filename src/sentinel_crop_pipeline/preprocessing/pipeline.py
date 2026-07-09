@@ -12,9 +12,9 @@ from pathlib import Path
 import numpy as np
 import rasterio
 
-from src.preprocessing import indices as idx
-from src.preprocessing import normalize as norm
-from src.preprocessing.scl_mask import DEFAULT_INVALID_CLASSES, valid_mask
+from sentinel_crop_pipeline.preprocessing import indices as idx
+from sentinel_crop_pipeline.preprocessing import normalize as norm
+from sentinel_crop_pipeline.preprocessing.scl_mask import DEFAULT_INVALID_CLASSES, valid_mask
 
 log = logging.getLogger("preprocess")
 

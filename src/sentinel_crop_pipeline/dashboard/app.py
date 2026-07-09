@@ -3,7 +3,7 @@ logs/ and data/. No CDSE/Gemini/Claude calls - API keys are never touched.
 
 Run from the repo root:
 
-    streamlit run src/dashboard/app.py
+    streamlit run src/sentinel_crop_pipeline/dashboard/app.py
 
 Needs the optional extra:  pip install -e ".[dashboard]"
 """
@@ -16,10 +16,11 @@ import pydeck as pdk
 import streamlit as st
 import yaml
 
-# streamlit runs this file as a script, not a package member
+# streamlit runs this file as a script; sys.path makes src/ importable
+# so the app also works without `pip install -e .`
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.dashboard import data as d  # noqa: E402
+from sentinel_crop_pipeline.dashboard import data as d  # noqa: E402
 
 st.set_page_config(page_title="sentinel-crop-pipeline", layout="wide")
 
@@ -102,9 +103,12 @@ with tab_map:
                 stroked=True, filled=True, get_fill_color="properties.color",
                 get_line_color=[60, 60, 60, 200], line_width_min_pixels=1,
                 pickable=True))
+        lat, lon = (d.geojson_center(aoi)
+                    or d.geojson_center({"features": features})
+                    or (0.0, 0.0))
         st.pydeck_chart(pdk.Deck(
             layers=layers,
-            initial_view_state=pdk.ViewState(latitude=38.3, longitude=26.77, zoom=8),
+            initial_view_state=pdk.ViewState(latitude=lat, longitude=lon, zoom=8),
             tooltip={"text": "{scene_id}\n{status}"},
             map_style=None))
         st.caption("green = accepted, orange = needs manual review, red = rejected; "
@@ -173,12 +177,13 @@ with tab_split:
         if not polys:
             st.warning("Patch COGs not readable — did data/patches/cog move?")
         else:
+            lat, lon = d.geojson_center(polys) or (0.0, 0.0)
             st.pydeck_chart(pdk.Deck(
                 layers=[pdk.Layer("PolygonLayer", polys, get_polygon="polygon",
                                   get_fill_color="color",
                                   get_line_color=[40, 40, 40, 200],
                                   line_width_min_pixels=1, pickable=True)],
-                initial_view_state=pdk.ViewState(latitude=38.3, longitude=26.77,
+                initial_view_state=pdk.ViewState(latitude=lat, longitude=lon,
                                                  zoom=9),
                 tooltip={"text": "split: {split}\nblock: {block}"},
                 map_style=None))

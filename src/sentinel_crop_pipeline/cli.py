@@ -1,11 +1,11 @@
 """CLI entry point. Stages run independently:
 
-    python -m src.cli discover   --config config/default.yaml
-    python -m src.cli download   --config config/default.yaml [--yes]
-    python -m src.cli preprocess --config config/default.yaml
-    python -m src.cli patch      --config config/default.yaml
-    python -m src.cli label      --config config/default.yaml
-    python -m src.cli run-all    --config config/default.yaml [--yes]
+    python -m sentinel_crop_pipeline.cli discover   --config config/default.yaml
+    python -m sentinel_crop_pipeline.cli download   --config config/default.yaml [--yes]
+    python -m sentinel_crop_pipeline.cli preprocess --config config/default.yaml
+    python -m sentinel_crop_pipeline.cli patch      --config config/default.yaml
+    python -m sentinel_crop_pipeline.cli label      --config config/default.yaml
+    python -m sentinel_crop_pipeline.cli run-all    --config config/default.yaml [--yes]
 """
 
 import argparse
@@ -13,10 +13,10 @@ import json
 import sys
 from pathlib import Path
 
-from src.utils.config import all_bands, load_config, load_crop_calendar
-from src.utils.env import load_dotenv
-from src.utils.geo import load_aoi
-from src.utils.run_logger import RunLogger
+from sentinel_crop_pipeline.utils.config import all_bands, load_config, load_crop_calendar
+from sentinel_crop_pipeline.utils.env import load_dotenv
+from sentinel_crop_pipeline.utils.geo import load_aoi
+from sentinel_crop_pipeline.utils.run_logger import RunLogger
 
 CATALOG_FILE = Path("data/catalog/scenes.json")
 
@@ -31,9 +31,9 @@ def _setup(args):
 def cmd_discover(args) -> int:
     cfg, log_dir, level = _setup(args)
     logger = RunLogger("discover", log_dir, level)
-    from src.discovery.judge import get_judge
-    from src.discovery.providers import get_provider
-    from src.discovery.scene_selector import SceneSelector
+    from sentinel_crop_pipeline.discovery.judge import get_judge
+    from sentinel_crop_pipeline.discovery.providers import get_provider
+    from sentinel_crop_pipeline.discovery.scene_selector import SceneSelector
 
     aoi = load_aoi(cfg["aoi"]["path"])
     provider = get_provider(cfg)
@@ -78,8 +78,8 @@ def cmd_discover(args) -> int:
 def cmd_download(args) -> int:
     cfg, log_dir, level = _setup(args)
     logger = RunLogger("download", log_dir, level)
-    from src.discovery.providers import get_provider
-    from src.discovery.providers.base import Scene
+    from sentinel_crop_pipeline.discovery.providers import get_provider
+    from sentinel_crop_pipeline.discovery.providers.base import Scene
 
     if not CATALOG_FILE.exists():
         logger.warning("no catalog found; run `discover` first")
@@ -126,7 +126,7 @@ def cmd_download(args) -> int:
 def cmd_preprocess(args) -> int:
     cfg, log_dir, level = _setup(args)
     logger = RunLogger("preprocess", log_dir, level)
-    from src.preprocessing.pipeline import run_preprocess
+    from sentinel_crop_pipeline.preprocessing.pipeline import run_preprocess
 
     outputs = run_preprocess(cfg, logger)
     if not outputs:
@@ -138,7 +138,7 @@ def cmd_preprocess(args) -> int:
 def cmd_patch(args) -> int:
     cfg, log_dir, level = _setup(args)
     logger = RunLogger("patch", log_dir, level)
-    from src.patching.tiler import run_patching
+    from sentinel_crop_pipeline.patching.tiler import run_patching
 
     records = run_patching(cfg, logger)
     if not records:
@@ -150,8 +150,8 @@ def cmd_patch(args) -> int:
 def cmd_label(args) -> int:
     cfg, log_dir, level = _setup(args)
     logger = RunLogger("label", log_dir, level)
-    from src.labeling.base import LabelSourceError
-    from src.labeling.rasterize import run_labeling
+    from sentinel_crop_pipeline.labeling.base import LabelSourceError
+    from sentinel_crop_pipeline.labeling.rasterize import run_labeling
 
     try:
         records = run_labeling(cfg, logger)

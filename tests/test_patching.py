@@ -5,8 +5,8 @@ from collections import defaultdict
 import numpy as np
 import rasterio
 
-from src.patching.tiler import iter_windows, run_patching
-from src.preprocessing.pipeline import preprocess_scene
+from sentinel_crop_pipeline.patching.tiler import iter_windows, run_patching
+from sentinel_crop_pipeline.preprocessing.pipeline import preprocess_scene
 from tests.conftest import write_raw_scene
 
 
@@ -125,3 +125,11 @@ def test_patch_georeference_matches_window(tmp_path, base_cfg):
         got_x, got_y = patch.transform * (0, 0)
         assert (got_x, got_y) == (expected_x, expected_y)
         assert patch.crs == src.crs
+
+
+def test_index_paths_are_posix(tmp_path, base_cfg):
+    # index.csv must stay readable on Linux/macOS training environments
+    cfg = _prepare(tmp_path, base_cfg, cloud_rows=0)
+    for rec in run_patching(cfg):
+        assert "\\" not in rec["cog_path"]
+        assert "\\" not in rec["train_path"]

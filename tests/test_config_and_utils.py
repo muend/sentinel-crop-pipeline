@@ -1,8 +1,8 @@
 import pytest
 from shapely.geometry import box
 
-from src.utils.config import all_bands, load_config, normalize_band
-from src.utils.geo import bbox_dims_px, load_aoi, overlap_pct, utm_epsg_for
+from sentinel_crop_pipeline.utils.config import all_bands, load_config, normalize_band
+from sentinel_crop_pipeline.utils.geo import bbox_dims_px, load_aoi, overlap_pct, utm_epsg_for
 
 
 def test_load_default_config():

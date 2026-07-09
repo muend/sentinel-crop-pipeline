@@ -5,9 +5,10 @@ type: software
 authors:
   - family-names: Duran
     given-names: Muhammed Enes
+    affiliation: Izmir Institute of Technology
 repository-code: "https://github.com/muend/sentinel-crop-pipeline"
 license: Apache-2.0
-version: 0.2.0
+version: 0.3.0
 date-released: 2026-07-09
 keywords:
   - sentinel-2

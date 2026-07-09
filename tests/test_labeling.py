@@ -6,10 +6,10 @@ import pyproj
 import pytest
 import rasterio
 
-from src.labeling import CksImportSource, LabelSourceError, VectorLabelSource
-from src.labeling.rasterize import build_class_map, run_labeling
-from src.patching.tiler import run_patching
-from src.preprocessing.pipeline import preprocess_scene
+from sentinel_crop_pipeline.labeling import CksImportSource, LabelSourceError, VectorLabelSource
+from sentinel_crop_pipeline.labeling.rasterize import build_class_map, run_labeling
+from sentinel_crop_pipeline.patching.tiler import run_patching
+from sentinel_crop_pipeline.preprocessing.pipeline import preprocess_scene
 from tests.conftest import write_raw_scene
 
 # Scene grid (see conftest): EPSG:32635, origin (500000, 4250000), 64x64 @10m.
