@@ -1,211 +1,642 @@
 # sentinel-crop-pipeline
 
-![CI](https://github.com/muend/sentinel-crop-pipeline/actions/workflows/ci.yml/badge.svg)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![License](https://img.shields.io/badge/license-Apache--2.0-green)
+[![CI](https://github.com/muend/sentinel-crop-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/muend/sentinel-crop-pipeline/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/sentinel-crop-pipeline.svg)](https://pypi.org/project/sentinel-crop-pipeline/)
+[![Python](https://img.shields.io/pypi/pyversions/sentinel-crop-pipeline.svg)](https://pypi.org/project/sentinel-crop-pipeline/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
+[![DOI](https://zenodo.org/badge/1295069333.svg)](https://doi.org/10.5281/zenodo.21284444)
 
-A reproducible Sentinel-2 data preparation pipeline for crop classification
-and CNN/U-Net training: scene discovery, AOI-cropped download, cloud masking,
-band stacking, spectral indices, fixed-size training patches, and ground-truth
-label masks. Config-driven; change the AOI, dates, crop, bands, or patch size
-in `config/default.yaml` without touching code.
+**A reproducible Sentinel-2 data preparation pipeline for crop-classification research.**
 
-Scope: this repository prepares training-ready data. Model training and
-evaluation are done downstream by the consuming project; the patch/label
-output format (float32 arrays + MASK band + spatially blocked splits) is
-designed for that.
+`sentinel-crop-pipeline` prepares Copernicus/CDSE Sentinel-2 L2A imagery for downstream crop-classification models. It handles scene discovery, AOI-cropped download, cloud/shadow masking, spectral preprocessing, fixed-size patch generation, spatially blocked train/validation/test splits, and patch-aligned ground-truth label masks.
 
-Built for a TUBITAK 2209-A crop mapping study (Izmir/Urla), designed to be
-reusable for any Sentinel-2 crop pattern project.
+The package is designed for research workflows where the model-training repository should consume clean, auditable, geospatially consistent image/label pairs instead of reimplementing the remote-sensing data pipeline.
 
-## Status
+> **Scope:** this repository prepares training-ready data only. Model training, model evaluation, inference, and final prediction maps are intentionally kept downstream.
 
-| Phase | Scope | State |
+The project was developed for a **TÜBİTAK 2209-A crop mapping study in İzmir/Urla**, but the workflow is configurable and reusable for other Sentinel-2 agricultural study areas.
+
+---
+
+## Contents
+
+- [Why this project exists](#why-this-project-exists)
+- [What the pipeline does](#what-the-pipeline-does)
+- [Installation](#installation)
+- [Credentials](#credentials)
+- [Quickstart](#quickstart)
+- [Validated live run](#validated-live-run)
+- [Pipeline architecture](#pipeline-architecture)
+- [Configuration](#configuration)
+- [Scene selection](#scene-selection)
+- [Preprocessing](#preprocessing)
+- [Patch generation and spatial split](#patch-generation-and-spatial-split)
+- [Ground truth and labels](#ground-truth-and-labels)
+- [Outputs](#outputs)
+- [Review dashboard](#review-dashboard)
+- [Examples](#examples)
+- [Development](#development)
+- [Project status](#project-status)
+- [Known limitations](#known-limitations)
+- [Citation](#citation)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Why this project exists
+
+Remote-sensing crop-classification studies often become difficult to reproduce before the model stage. Common problems include:
+
+- undocumented scene selection;
+- relying only on scene-level cloud metadata;
+- downloading full SAFE products when only an AOI window is needed;
+- inconsistent cloud/shadow masking;
+- patch-level random splits that leak spatial information;
+- image patches and ground-truth masks that are not perfectly aligned;
+- missing audit logs for methodology reporting.
+
+This repository focuses on solving that data engineering layer.
+
+The goal is not to provide a new deep-learning architecture. The goal is to provide a reliable, restartable, auditable data pipeline that produces clean input for downstream CNN/U-Net or other crop-classification models.
+
+---
+
+## What the pipeline does
+
+```text
+discover -> download -> preprocess -> patch -> label
+```
+
+| Stage | Purpose | Main output |
 |---|---|---|
-| 1 | CDSE provider, rule-based scene selection, CLI | done |
-| 2 | SCL masking, band stack, indices, normalization | done |
-| 3 | Patch generation, COG + npy/TFRecord export, spatially-blocked 70/15/15 split | done |
-| 4 | AI scene review (SceneJudge: Gemini/Claude), vector LabelSource, CKS import | done |
-| 5 | CI, contributing guide, examples, release prep | done |
-| 6 | Local review dashboard (optional extra) | done |
+| `discover` | Search Sentinel-2 L2A scenes and apply deterministic selection rules | `data/catalog/scenes.json`, `logs/selection_results.json` |
+| `download` | Download AOI-cropped Sentinel-2 stacks through CDSE Process API | `data/raw/<scene>.tif` |
+| `preprocess` | Apply SCL masking, normalization, and spectral indices | `data/interim/<scene>_stack.tif` |
+| `patch` | Generate fixed-size COG/NPY/TFRecord patches and spatial splits | `data/patches/index.csv` |
+| `label` | Rasterize crop polygons into patch-aligned label masks | `data/patches/labels/` |
 
-## Install
+Key capabilities:
 
-From source (development):
+- CDSE-first Sentinel-2 L2A workflow;
+- AOI-cropped download instead of full SAFE products;
+- automatic tiling and mosaicking for large AOIs;
+- SCL-based cloud, shadow, cirrus, snow, and invalid-pixel masking;
+- reflectance normalization;
+- NDVI, NDRE, and NDWI support when required bands are available;
+- georeferenced COG/TIFF patches for QGIS inspection;
+- NPY and optional TFRecord training exports;
+- spatially blocked train/validation/test assignment;
+- GeoJSON/Shapefile parcel labels;
+- manual CKS import support with no scraping;
+- per-stage JSON audit logs;
+- optional local read-only Streamlit dashboard.
+
+---
+
+## Installation
+
+### From PyPI
 
 ```bash
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install sentinel-crop-pipeline
+```
+
+With `uv`:
+
+```bash
+uv pip install sentinel-crop-pipeline
+```
+
+Optional extras:
+
+```bash
+pip install "sentinel-crop-pipeline[dashboard]"   # Streamlit review UI
+pip install "sentinel-crop-pipeline[ai]"          # Gemini scene judge
+pip install "sentinel-crop-pipeline[claude]"      # Claude scene judge
+pip install "sentinel-crop-pipeline[gee]"         # optional GEE provider
+pip install "sentinel-crop-pipeline[shapefile]"   # Shapefile label input
+pip install "sentinel-crop-pipeline[tfrecord]"    # TFRecord export
+```
+
+### From source
+
+```bash
+git clone https://github.com/muend/sentinel-crop-pipeline.git
+cd sentinel-crop-pipeline
+
+python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+
 pip install -e ".[dev]"
-cp .env.example .env    # then fill in CDSE credentials
+pytest
 ```
 
-From PyPI (after the first published release):
+---
+
+## Credentials
+
+STAC search can run without credentials in metadata-only mode. Downloads and SCL pixel checks require CDSE/Sentinel Hub OAuth credentials.
+
+1. Create a free Copernicus Data Space Ecosystem account:
+   `https://dataspace.copernicus.eu/`
+
+2. Create an OAuth client:
+   `https://shapps.dataspace.copernicus.eu/dashboard/`
+
+3. Copy the environment template:
 
 ```bash
-pip install sentinel-crop-pipeline      # or: uv pip install sentinel-crop-pipeline
+cp .env.example .env
 ```
 
-CDSE credentials: create a free account at https://dataspace.copernicus.eu/,
-then an OAuth client at https://shapps.dataspace.copernicus.eu/dashboard/
-(User settings -> OAuth clients). Put the client id/secret in `.env`.
-STAC search works without credentials; downloads and the SCL pixel check
-require them.
+4. Fill in:
+
+```bash
+CDSE_CLIENT_ID=...
+CDSE_CLIENT_SECRET=...
+```
+
+Optional AI scene review keys:
+
+```bash
+GEMINI_API_KEY=...
+ANTHROPIC_API_KEY=...
+```
+
+The pipeline works without AI keys. If AI review is disabled, unavailable, rate-limited, or fails, the pipeline continues with deterministic layer-1 rules and marks relevant scenes as `needs_manual_review`.
+
+---
 
 ## Quickstart
 
+After installation, the package provides the `sentinel-crop` command:
+
 ```bash
-# 1. find candidate scenes, apply selection rules, write data/catalog/scenes.json
-python -m sentinel_crop_pipeline.cli discover --config config/default.yaml
-
-# 2. download AOI-cropped stacks (reports estimated size first)
-python -m sentinel_crop_pipeline.cli download --config config/default.yaml
-
-# 3. mask clouds (SCL), normalize, compute NDVI/NDRE -> data/interim/
-python -m sentinel_crop_pipeline.cli preprocess --config config/default.yaml
-
-# 4. cut 256x256 patches -> COG + npy + data/patches/index.csv with splits
-python -m sentinel_crop_pipeline.cli patch --config config/default.yaml
-
-# 5. rasterize field polygons to patch-aligned label masks
-python -m sentinel_crop_pipeline.cli label --config config/default.yaml
-
-# or stages 1-4 in sequence (label is NOT included: it needs parcel data
-# that usually arrives later; run it separately when ready):
-python -m sentinel_crop_pipeline.cli run-all --config config/default.yaml
+sentinel-crop --help
 ```
 
-`pip install -e .` also provides the `sentinel-crop` console command, e.g.
-`sentinel-crop discover --config config/default.yaml`.
+Run the stages one by one:
 
-For a quick low-volume trial (~0.5 GB instead of a full season), use
-`--config config/urla_june_subset.yaml` — the exact run documented in
-[docs/validation-run.md](docs/validation-run.md).
+```bash
+# 1. Discover candidate Sentinel-2 scenes
+sentinel-crop discover --config config/default.yaml
 
-Each stage is independent: it reads the previous stage's output from disk, so a
-failure in one stage does not affect the others. Every run writes a summary to
-`logs/run_<stage>_<timestamp>.json` (scenes found/rejected/accepted, patch
-counts), usable directly for methodology reporting.
+# 2. Download AOI-cropped Sentinel-2 stacks
+sentinel-crop download --config config/default.yaml
 
-Run tests: `pytest`
+# 3. Apply SCL masking, normalization, and spectral indices
+sentinel-crop preprocess --config config/default.yaml
 
-## Interim AOI
+# 4. Generate fixed-size patches and spatially blocked splits
+sentinel-crop patch --config config/default.yaml
 
-`data/aoi/urla_ilce_interim.geojson` is a simplified rectangle covering Urla
-district — an INTERIM placeholder, not the official boundary. When real field
-parcels (or an official boundary export) are available, replace the file and
-point `aoi.path` at it; no code change is needed. The interim AOI (~31 x 27 km)
-exceeds the Process API's 2500 px/axis limit at 10 m, so downloads are
-automatically split into sub-tiles and mosaicked.
+# 5. Rasterize parcel polygons into patch-aligned label masks
+sentinel-crop label --config config/default.yaml
+```
+
+Run stages 1-4 in sequence:
+
+```bash
+sentinel-crop run-all --config config/default.yaml
+```
+
+`label` is intentionally not included in `run-all`, because parcel boundaries and ground-truth crop labels usually arrive later in the research workflow.
+
+The module form is also supported:
+
+```bash
+python -m sentinel_crop_pipeline.cli discover --config config/default.yaml
+```
+
+---
+
+## Validated live run
+
+For a smaller live trial over the interim Urla AOI, use the subset configuration:
+
+```bash
+sentinel-crop run-all --config config/urla_june_subset.yaml --yes
+```
+
+This low-volume validation run documents the pipeline against live CDSE APIs over June 2025:
+
+- 9 Sentinel-2 L2A scenes discovered;
+- AOI-cropped download through CDSE Process API;
+- large AOI split into sub-tiles and mosaicked;
+- 9 preprocessed float32 stacks;
+- 990 training patches generated;
+- spatially blocked train/validation/test assignment.
+
+See the full run note:
+
+```text
+docs/validation-run.md
+```
+
+---
+
+## Pipeline architecture
+
+```mermaid
+flowchart LR
+    A[discover<br/>STAC search + SceneSelector] --> B[download<br/>Process API, AOI-cropped, tiled]
+    B --> C[preprocess<br/>SCL mask, normalize, indices]
+    C --> D[patch<br/>COG + NPY/TFRecord, blocked split]
+    D --> E[label<br/>vector/CKS -> raster masks]
+```
+
+Stages communicate through files on disk. This makes the workflow restartable: if one stage fails, previous outputs remain available and the failed stage can be re-run independently.
+
+Design principles:
+
+- keep runtime behavior config-driven;
+- preserve georeferencing at every stage;
+- mask invalid pixels instead of deleting them;
+- avoid spatial leakage in train/test splits;
+- keep permission-gated agricultural data manual-import only;
+- log decisions and summaries for methodology reporting;
+- keep the dashboard read-only and offline.
+
+---
 
 ## Configuration
 
-Key settings in `config/default.yaml`:
+The pipeline is controlled through YAML configuration files.
 
-- `aoi.path` — GeoJSON polygon(s), EPSG:4326
-- `time.start/end`, `time.crop` — set `crop: tomato` to restrict scenes to the
-  sowing-harvest window in `config/crop_calendar.yaml`
-- `search.max_cloud_cover_pct` — metadata pre-filter (default 20)
-- `scl_filter` — pixel-based cloud/shadow limit computed from the real SCL band
-- `ai_review.judge_provider` — `gemini | claude | none` (layer-2 review)
-- `bands.base/extra` — B02/B03/B04/B08 by default; add B05..B12 as needed
-- `patching.patch_size/stride` — stride < patch_size gives overlapping patches
-- `patching.block_factor` — spatial block size for the group-aware split
-- `labeling.source` — `vector` (GeoJSON/Shapefile) or `cks` (manual import)
-- `split` — train/val/test ratios (default 70/15/15)
+Main configuration:
 
-## Train/val/test split
+```text
+config/default.yaml
+```
 
-The split is group-aware over spatial blocks, not random per patch: each patch
-is keyed to a fixed world-grid cell (`spatial_block_id` in index.csv, cell side
-= `block_factor` x patch size) and whole blocks are assigned to one split.
-Neighbouring or overlapping patches therefore never end up in both train and
-test, which would otherwise inflate F1/IoU through spatial autocorrelation.
+Low-volume Urla validation subset:
 
-## Data providers
+```text
+config/urla_june_subset.yaml
+```
 
-Default is CDSE (Copernicus Data Space Ecosystem): the official ESA/EU source,
-no Google account needed. Downloads use the Sentinel Hub Process API hosted on
-CDSE, which returns only the AOI window instead of full ~1 GB SAFE products;
-`download.method: odata` switches to full-product download.
+Important settings:
 
-`data_provider: gee` selects the optional Google Earth Engine provider
-(search-only for now, `pip install ".[gee]"`). GEE requires a registered Google
-Cloud project, so it is not the default. New providers can be added by
-implementing `DataProvider` in `src/discovery/providers/`.
+| Key | Purpose |
+|---|---|
+| `aoi.path` | AOI polygon path, GeoJSON, EPSG:4326 |
+| `time.start` / `time.end` | date range for Sentinel-2 scene discovery |
+| `time.crop` | optional crop-calendar key |
+| `search.max_cloud_cover_pct` | scene-level metadata cloud-cover threshold |
+| `scl_filter.max_invalid_pct` | pixel-level invalid-pixel threshold over AOI |
+| `bands.base` / `bands.extra` | Sentinel-2 bands requested from CDSE |
+| `preprocessing.indices` | spectral indices such as NDVI, NDRE, NDWI |
+| `patching.patch_size` | output patch size in pixels |
+| `patching.stride` | patch stride in pixels |
+| `patching.block_factor` | spatial block size for split grouping |
+| `labeling.source` | `vector` or `cks` |
+| `labeling.vector_path` | path to crop polygons |
+| `labeling.attribute` | crop-label attribute in polygons |
+| `split.train` / `split.val` / `split.test` | target split ratios |
+
+---
 
 ## Scene selection
 
-Layer 1 (always on, deterministic): cloud metadata threshold, crop-calendar
-date window, AOI overlap percentage, and a pixel-based SCL statistic over the
-AOI.
+Scene selection has two layers.
 
-Layer 2 (optional): an AI judge reviews an RGB preview of each scene that
-passed layer 1. Judges follow the same plugin pattern as providers
-(`SceneJudge`): `gemini` (default; free-tier Gemini Flash-Lite, needs
-`GEMINI_API_KEY`, `pip install ".[ai]"`) or `claude` (needs
-`ANTHROPIC_API_KEY`, `pip install ".[claude]"`). The model id is set in config
-(`ai_review.model`) because Google's lineup changes frequently.
+### Layer 1: deterministic rules
 
-Graceful degradation: with `judge_provider: none`, a missing key/SDK, or a
-failed API call (429/quota/timeout), the pipeline continues on the layer-1
-result and flags the scene `needs_manual_review: true` in the selection log —
-scenes are never auto-rejected by an unavailable judge. All decisions land in
-`logs/selection_results.json` with per-check notes.
+Layer 1 is always available and does not require AI keys:
 
-## Ground truth
+- metadata cloud-cover threshold;
+- crop-calendar date window;
+- AOI overlap percentage;
+- pixel-level SCL invalid-pixel check.
 
-`labeling.source: vector` reads field parcel polygons (GeoJSON natively,
-Shapefile with `pip install ".[shapefile]"`) with the crop label in a property
-(`labeling.attribute`, default `crop_type`), and rasterizes them into uint8
-masks aligned to each patch (background = 0; class ids in
-`data/patches/labels/class_map.json`).
+Pixel-level SCL checking is important because a scene may pass the global metadata cloud filter while still being cloudy or shadowed over the actual AOI.
 
-CKS (Ciftci Kayit Sistemi) data is supported only via manual import
-(`labeling.source: cks`): access requires permission from the
-Provincial/District Directorate of Agriculture and Forestry, and this tool
-does not and will not fetch it automatically. Place an officially obtained
-export under `data/raw/cks_import/`.
+### Layer 2: optional AI review
 
-Manual labeling: QGIS and Label Studio both export GeoJSON, which the vector
-source reads directly — no custom labeling UI is planned.
+Optional visual review can evaluate RGB scene previews:
 
-## Output layout
-
-```
-data/
-  catalog/scenes.json        accepted scenes (discover)
-  raw/<scene>.tif            AOI-cropped uint16 stacks, bands + SCL (download)
-  interim/<scene>_stack.tif  float32, NaN-masked, indices + MASK (preprocess)
-  patches/cog/               georeferenced patches, open in QGIS (patch)
-  patches/train/             npy/tfrecord + meta json for training (patch)
-  patches/labels/            uint8 label masks + class_map.json (label)
-  patches/index.csv          patch_id, scene, split, spatial_block_id, paths
-logs/                        per-run JSON summaries
+```yaml
+ai_review:
+  judge_provider: gemini   # gemini | claude | none
 ```
 
-## Review dashboard (optional)
+Install Gemini support:
 
 ```bash
-pip install -e ".[dashboard]"
+pip install "sentinel-crop-pipeline[ai]"
+```
+
+Install Claude support:
+
+```bash
+pip install "sentinel-crop-pipeline[claude]"
+```
+
+AI review is deliberately conservative. Missing keys, missing SDKs, rate limits, timeouts, or malformed responses never stop the pipeline and never auto-reject scenes. Instead, the scene is flagged for manual review.
+
+Selection decisions are written to:
+
+```text
+logs/selection_results.json
+```
+
+---
+
+## Preprocessing
+
+The preprocessing stage reads downloaded Sentinel-2 stacks and writes float32 GeoTIFFs.
+
+It performs:
+
+- SCL-based invalid-pixel masking;
+- `NaN` masking for cloud/shadow/snow/invalid pixels;
+- reflectance normalization;
+- spectral index generation;
+- `MASK` band creation.
+
+Example output bands:
+
+```text
+B02 B03 B04 B08 NDVI MASK
+```
+
+If an index requires a missing band, it is skipped with a warning. For example, NDRE requires red-edge bands such as `B05`.
+
+---
+
+## Patch generation and spatial split
+
+The `patch` stage creates fixed-size training patches from preprocessed stacks.
+
+Outputs include:
+
+- georeferenced COG/TIFF patches for visual inspection;
+- `.npy` arrays for model training;
+- optional TFRecord files;
+- sidecar metadata;
+- a patch manifest at `data/patches/index.csv`.
+
+The split is group-aware over spatial blocks, not random per patch.
+
+Each patch receives a stable `spatial_block_id` based on CRS and world-grid position. Whole blocks are assigned to a single split. This reduces a common remote-sensing evaluation problem: neighbouring or overlapping patches appearing in both train and test sets, which can inflate metrics through spatial autocorrelation.
+
+---
+
+## Ground truth and labels
+
+The `label` stage reads crop polygons and rasterizes them onto the exact patch grid.
+
+Supported sources:
+
+| Source | Description |
+|---|---|
+| `vector` | GeoJSON by default; Shapefile with optional extra |
+| `cks` | manual import of officially obtained CKS exports |
+
+GeoJSON configuration:
+
+```yaml
+labeling:
+  source: vector
+  vector_path: data/labels/parcels.geojson
+  attribute: crop_type
+```
+
+Shapefile support:
+
+```bash
+pip install "sentinel-crop-pipeline[shapefile]"
+```
+
+Outputs:
+
+```text
+data/patches/labels/
+data/patches/labels/class_map.json
+```
+
+Background is class `0`. Crop classes start from `1`.
+
+CKS data is not fetched automatically. It must be obtained through the proper institutional/legal process and placed manually under the configured import directory.
+
+---
+
+## Outputs
+
+```text
+data/
+  catalog/
+    scenes.json                  accepted scenes from discover
+
+  raw/
+    <scene>.tif                  AOI-cropped uint16 stack, bands + SCL
+
+  interim/
+    <scene>_stack.tif            float32 stack, NaN-masked, indices + MASK
+
+  patches/
+    cog/                         georeferenced patch TIFF/COG files
+    train/                       NPY or TFRecord training arrays
+    labels/                      uint8 label masks + class_map.json
+    index.csv                    patch manifest, split, paths, invalid fraction
+
+logs/
+  run_<stage>_<timestamp>.json   per-stage run summaries
+  selection_results.json         per-scene selection decisions
+```
+
+The patch manifest is the main handoff file for downstream model-training repositories.
+
+---
+
+## Review dashboard
+
+Install dashboard dependencies:
+
+```bash
+pip install "sentinel-crop-pipeline[dashboard]"
+```
+
+Run from the repository root:
+
+```bash
 streamlit run src/sentinel_crop_pipeline/dashboard/app.py
 ```
 
-A local, single-user, read-only Streamlit app: scene footprint map colored by
-selection outcome, filterable scene table (cloud %, SCL stats, judge verdicts),
-patch/label browser with overlay opacity, a split map that visually proves
-train/val/test blocks are spatially separated, and run history from
-`logs/run_*.json`. It only reads files already on disk — no CDSE/Gemini/Claude
-calls are made from the dashboard, so API keys are never exposed through it.
-The core pipeline does not depend on Streamlit.
+The dashboard is local, single-user, and read-only.
 
-## Examples and contributing
+It shows:
 
-`examples/` has reference outputs (selection audit log, patch index) from a
-real Urla run and synthetic demo parcels for the label stage. Contributions:
-see [CONTRIBUTING.md](CONTRIBUTING.md). To cite this software, see
-[CITATION.cff](CITATION.cff).
+- scene footprint map;
+- accepted/rejected/manual-review scene status;
+- cloud and SCL statistics;
+- patch browser;
+- RGB and label overlay;
+- spatial split map;
+- run history from JSON logs.
+
+The dashboard only reads files already on disk. It does not call CDSE, Gemini, Claude, or any external API.
+
+---
+
+## Examples
+
+The `examples/` directory contains small reference outputs:
+
+```text
+examples/
+  selection_results.example.json
+  index.example.csv
+  sample_parcels.geojson
+```
+
+Use the sample parcels to try the label stage:
+
+```yaml
+labeling:
+  vector_path: examples/sample_parcels.geojson
+```
+
+Then run:
+
+```bash
+sentinel-crop label --config config/default.yaml
+```
+
+The sample parcels are synthetic and are not real ground truth.
+
+---
+
+## Development
+
+Clone the repository:
+
+```bash
+git clone https://github.com/muend/sentinel-crop-pipeline.git
+cd sentinel-crop-pipeline
+```
+
+Create a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+```
+
+Install in editable mode:
+
+```bash
+pip install -e ".[dev]"
+```
+
+Run tests:
+
+```bash
+pytest
+```
+
+The test suite uses mocks and synthetic rasters. Tests should not require network access or external credentials.
+
+---
+
+## Project status
+
+Current package status: **beta research software**.
+
+Implemented:
+
+- PyPI package;
+- Zenodo DOI;
+- CDSE provider;
+- Sentinel-2 L2A scene discovery;
+- AOI-cropped Process API download;
+- tiled download and mosaic path;
+- OData fallback;
+- SCL masking;
+- spectral preprocessing;
+- patch generation;
+- COG, NPY, and TFRecord export;
+- spatially blocked split;
+- vector and manual CKS label sources;
+- patch-aligned label masks;
+- run logs and selection audit records;
+- optional AI scene review;
+- optional read-only dashboard;
+- CI and test suite.
+
+Out of scope for this repository:
+
+- model training;
+- model evaluation;
+- inference over unseen scenes;
+- final prediction map production;
+- automatic CKS access or scraping;
+- hosted multi-user dashboard.
+
+---
+
+## Known limitations
+
+- The default Urla AOI is an interim rectangle, not an official district boundary.
+- GEE provider support is currently search-only.
+- Live AI judge validation is optional and not required for the deterministic pipeline.
+- The label stage depends on externally prepared ground-truth polygons.
+- Spatial blocks are grid cells, not agronomic field units. Larger `block_factor` values reduce residual leakage risk when fields cross block boundaries.
+- The package prepares data for downstream models; it does not guarantee model accuracy by itself.
+
+---
+
+## Citation
+
+If you use this software, cite it using the Zenodo DOI:
+
+```bibtex
+@software{duran_sentinel_crop_pipeline,
+  title  = {sentinel-crop-pipeline: a reproducible Sentinel-2 data preparation pipeline for crop classification},
+  author = {Duran, Muhammed Enes},
+  doi    = {10.5281/zenodo.21284444},
+  url    = {https://github.com/muend/sentinel-crop-pipeline}
+}
+```
+
+See also:
+
+```text
+CITATION.cff
+```
+
+---
+
+## Contributing
+
+Contributions are welcome for:
+
+- bug fixes;
+- documentation improvements;
+- additional data providers;
+- additional scene judges;
+- preprocessing utilities;
+- tests and examples.
+
+Please read:
+
+```text
+CONTRIBUTING.md
+```
+
+Ground rules:
+
+- keep tests network-free;
+- do not commit credentials;
+- keep runtime behavior config-driven;
+- do not add automated scraping for permission-gated agricultural datasets;
+- document major design changes before changing established behavior.
+
+---
 
 ## License
 
-Apache 2.0. Sentinel-2 data: Copernicus Sentinel data, ESA — see the
-[legal notice](https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice).
+This project is licensed under the **Apache License 2.0**.
+
+Sentinel-2 data is Copernicus Sentinel data. See the Copernicus Sentinel data legal notice for data-use terms.
