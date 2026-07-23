@@ -1,5 +1,5 @@
 # sentinel-crop-pipeline
-
+[![Sentinel Crop Pipeline](assets/social-preview.png)](https://github.com/muend/sentinel-crop-pipeline)
 [![CI](https://github.com/muend/sentinel-crop-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/muend/sentinel-crop-pipeline/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/sentinel-crop-pipeline.svg)](https://pypi.org/project/sentinel-crop-pipeline/)
 [![Python](https://img.shields.io/pypi/pyversions/sentinel-crop-pipeline.svg)](https://pypi.org/project/sentinel-crop-pipeline/)
