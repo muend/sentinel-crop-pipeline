@@ -37,12 +37,15 @@ bands:
   extra: []                    # e.g. [B05, B06, B07, B8A, B11, B12]
 
 download:
+  field_only: false           # field workflow saves only polygon-clipped COGs; see urla_fields.yaml
   method: process_api          # process_api (AOI-cropped, recommended) | odata (full SAFE zip)
   resolution_m: 10
   max_auto_size_mb: 200        # above this per-scene estimate, require --yes
   out_dir: data/raw
 
 preprocessing:
+  # For field-only Urla imagery use config/urla_fields.yaml with private polygons.
+  field_mask_path: null       # optional WGS84 field polygons; enables strict interior masking
   resampling: bilinear         # bilinear | cubic (for 20m -> 10m bands)
   normalization: reflectance   # reflectance (DN/10000) | minmax (per band)
   indices: [NDVI, NDRE]        # NDVI | NDRE | NDWI (skipped if required band missing)

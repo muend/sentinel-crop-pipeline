@@ -28,8 +28,11 @@ def write_cog(path: str | Path, arr: np.ndarray, transform, crs,
         dtype=str(arr.dtype), transform=transform, crs=crs,
     )
     try:
-        with rasterio.open(path, "w", driver="COG", compress="DEFLATE", **base) as dst:
+        with rasterio.Env(GDAL_TIFF_INTERNAL_MASK=True), \
+                rasterio.open(path, "w", driver="COG", compress="DEFLATE", **base) as dst:
             dst.write(arr)
+            if "MASK" in band_names:
+                dst.write_mask((arr[band_names.index("MASK")] > 0).astype("uint8") * 255)
             for i, n in enumerate(band_names, start=1):
                 dst.set_band_description(i, n)
     except Exception:
@@ -37,9 +40,12 @@ def write_cog(path: str | Path, arr: np.ndarray, transform, crs,
         if not _cog_warned:
             log.warning("COG driver unavailable, falling back to tiled GTiff")
             _cog_warned = True
-        with rasterio.open(path, "w", driver="GTiff", tiled=True, blockxsize=256,
-                           blockysize=256, compress="deflate", **base) as dst:
+        with rasterio.Env(GDAL_TIFF_INTERNAL_MASK=True), \
+                rasterio.open(path, "w", driver="GTiff", tiled=True, blockxsize=256,
+                              blockysize=256, compress="deflate", **base) as dst:
             dst.write(arr)
+            if "MASK" in band_names:
+                dst.write_mask((arr[band_names.index("MASK")] > 0).astype("uint8") * 255)
             for i, n in enumerate(band_names, start=1):
                 dst.set_band_description(i, n)
     return path

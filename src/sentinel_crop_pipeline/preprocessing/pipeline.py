@@ -14,6 +14,7 @@ import rasterio
 
 from sentinel_crop_pipeline.preprocessing import indices as idx
 from sentinel_crop_pipeline.preprocessing import normalize as norm
+from sentinel_crop_pipeline.preprocessing.field_mask import field_mask_for_grid, load_fields
 from sentinel_crop_pipeline.preprocessing.scl_mask import DEFAULT_INVALID_CLASSES, valid_mask
 
 log = logging.getLogger("preprocess")
@@ -25,6 +26,14 @@ def preprocess_scene(in_path: str | Path, out_path: str | Path, cfg: dict) -> li
         descriptions = [d or f"band_{i}" for i, d in enumerate(src.descriptions, 1)]
         data = src.read()
         profile = src.profile
+        source_valid = src.dataset_mask() > 0
+        field_path = cfg.get("preprocessing", {}).get("field_mask_path")
+        field_mask = None
+        if field_path:
+            field_mask = field_mask_for_grid(load_fields(field_path), src.crs, src.transform,
+                                             (src.height, src.width))
+            if not field_mask.any():
+                raise ValueError(f"{in_path}: no complete interior field pixels; check field boundaries/grid")
 
     if "SCL" not in descriptions:
         raise ValueError(f"{in_path}: no SCL band found; cannot mask clouds")
@@ -34,7 +43,9 @@ def preprocess_scene(in_path: str | Path, out_path: str | Path, cfg: dict) -> li
 
     mask = valid_mask(
         scl, tuple(cfg.get("scl_filter", {}).get("invalid_classes",
-                                                 DEFAULT_INVALID_CLASSES)))
+                                                 DEFAULT_INVALID_CLASSES))) & source_valid
+    if field_mask is not None:
+        mask &= field_mask
     bands[:, ~mask] = np.nan
 
     mode = cfg.get("preprocessing", {}).get("normalization", "reflectance")
@@ -59,6 +70,9 @@ def preprocess_scene(in_path: str | Path, out_path: str | Path, cfg: dict) -> li
         bands = np.concatenate([bands, arr[None]], axis=0)
         out_names.append(name)
 
+    if field_mask is not None:
+        bands = np.concatenate([bands, field_mask.astype(np.float32)[None]], axis=0)
+        out_names.append("FIELD_MASK")
     bands = np.concatenate([bands, mask.astype(np.float32)[None]], axis=0)
     out_names.append("MASK")
 
@@ -67,10 +81,15 @@ def preprocess_scene(in_path: str | Path, out_path: str | Path, cfg: dict) -> li
                    tiled=True, blockxsize=256, blockysize=256)
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with rasterio.open(out_path, "w", **profile) as dst:
-        dst.write(bands)
-        for i, n in enumerate(out_names, start=1):
-            dst.set_band_description(i, n)
+    with rasterio.Env(GDAL_TIFF_INTERNAL_MASK=True):
+        with rasterio.open(out_path, "w", **profile) as dst:
+            dst.write(bands)
+            dst.write_mask(mask.astype("uint8") * 255)
+            for i, n in enumerate(out_names, start=1):
+                dst.set_band_description(i, n)
+            if field_mask is not None:
+                dst.update_tags(field_only="true", field_pixel_policy="interior_without_boundary_cells",
+                                field_pixels=int(field_mask.sum()), retained_pixels=int(mask.sum()))
     return out_names
 
 

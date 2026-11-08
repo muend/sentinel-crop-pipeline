@@ -10,8 +10,10 @@
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from sentinel_crop_pipeline.utils.config import all_bands, load_config, load_crop_calendar
 from sentinel_crop_pipeline.utils.env import load_dotenv
@@ -19,6 +21,30 @@ from sentinel_crop_pipeline.utils.geo import load_aoi
 from sentinel_crop_pipeline.utils.run_logger import RunLogger
 
 CATALOG_FILE = Path("data/catalog/scenes.json")
+
+
+def _download_field_crops(provider, scene, aoi, bands: list[str], out_dir: str | Path,
+                          fields_path: str | Path, resolution_m: int, assume_yes: bool) -> list[Path]:
+    """Download into temporary storage; persist only validated per-field COGs."""
+    from sentinel_crop_pipeline.preprocessing.field_mask import load_fields, write_field_crop
+
+    features = load_fields(fields_path)
+    field_ids = [(f.get("properties") or {}).get("field_id", "") for f in features]
+    if any(not isinstance(fid, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", fid) for fid in field_ids):
+        raise ValueError("Field-only downloads require safe nonempty field_id values")
+    if len(set(field_ids)) != len(field_ids):
+        raise ValueError("Field-only downloads require unique field_id values")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", scene.id) or scene.id in (".", ".."):
+        raise ValueError("Unsafe scene id for field crop filenames")
+    paths = []
+    with TemporaryDirectory(prefix="sentinel_field_download_") as directory:
+        source = provider.download(scene, aoi, bands, directory,
+                                   resolution_m=resolution_m, assume_yes=assume_yes)
+        for fid in field_ids:
+            target = Path(out_dir) / f"{scene.id}_{fid}.tif"
+            write_field_crop(source, target, fields_path, fid)
+            paths.append(target)
+    return paths
 
 
 def _setup(args):
@@ -91,6 +117,10 @@ def cmd_download(args) -> int:
     dl = cfg.get("download", {})
     method = dl.get("method", "process_api")
     out_dir = dl.get("out_dir", "data/raw")
+    field_only = bool(dl.get("field_only", False))
+    fields_path = cfg.get("preprocessing", {}).get("field_mask_path")
+    if field_only and (method != "process_api" or not fields_path):
+        raise ValueError("download.field_only requires process_api and preprocessing.field_mask_path")
 
     # Report total estimate before touching the network for data.
     if method == "process_api" and hasattr(provider, "estimate_size_mb"):
@@ -106,7 +136,16 @@ def cmd_download(args) -> int:
             return 1
 
     done = 0
+    field_crops = 0
     for scene in scenes:
+        if field_only:
+            paths = _download_field_crops(provider, scene, aoi, bands, out_dir, fields_path,
+                                          int(dl.get("resolution_m", 10)), args.yes)
+            done += 1
+            field_crops += len(paths)
+            for path in paths:
+                logger.event("downloaded field crop", scene=scene.id, path=str(path))
+            continue
         if method == "process_api":
             path = provider.download(scene, aoi, bands, out_dir,
                                      resolution_m=int(dl.get("resolution_m", 10)),
@@ -118,7 +157,7 @@ def cmd_download(args) -> int:
         done += 1
         logger.event("downloaded", scene=scene.id, path=str(path))
 
-    logger.set_summary(scenes=len(scenes), downloaded=done, out_dir=out_dir)
+    logger.set_summary(scenes=len(scenes), downloaded=done, field_crops=field_crops, out_dir=out_dir)
     logger.finish()
     return 0
 

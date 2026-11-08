@@ -87,6 +87,33 @@ src/sentinel_crop_pipeline/
   `sentinel-2-l2a`), verified against the live catalog. Cloud cover is
   re-filtered client-side to tolerate deployments with partial query support.
 
+## Field-only imagery (2026-11-09)
+
+The Urla research workflow uses explicit private field polygons, rather than
+accepting an entire rectangular download as agricultural imagery. A Process API
+context window may be retained privately for location review; dataset outputs
+must mask everything outside the supplied field boundaries.
+
+With `download.field_only`, the rectangular API response is temporary. Only
+per-field COGs, masks, and provenance are persisted to the raw dataset folder.
+Field IDs are validated before network activity. This mode requires the
+Process API path and an explicit field-mask file.
+
+The preprocessing field-mask option combines geometric field membership with
+SCL validity. Its conservative rule discards every pixel touching the polygon
+boundary (including hole boundaries), keeping complete interior pixels only.
+It appends `FIELD_MASK` and preserves `MASK` as the final combined validity band.
+All optical/index values outside `MASK` are NaN. Dataset masks make NoData
+explicit in GIS viewers. A separate local crop exporter produces a compact COG
+for a single field, preserving the original resolution/grid and source checksum.
+
+The field-only configuration requires `FIELD_MASK` during patching and requires
+100% field coverage for accepted fixed-size patches. Unmasked historical stacks
+must fail this check. Too-small fields can produce a valid per-field crop and
+zero fixed-size training patches; images are never enlarged to invent detail.
+Field boundaries and provenance remain private and ignored by Git. This
+geometric mask does not infer crop type or establish reference-label accuracy.
+
 ## Assumptions / known limits
 
 - The interim Urla AOI is a simplified bbox, not the official district

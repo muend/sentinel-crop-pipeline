@@ -392,6 +392,11 @@ Each patch receives a stable `spatial_block_id` based on CRS and world-grid posi
 
 ## Ground truth and labels
 
+For imagery containing only field pixels, use the
+[field-only workflow](docs/field-only.md) and `config/urla_fields.yaml`.
+It combines private polygon boundaries with SCL masking, removes boundary
+pixels conservatively, and rejects unmasked/background training windows.
+
 The `label` stage reads crop polygons and rasterizes them onto the exact patch grid.
 
 Supported sources:

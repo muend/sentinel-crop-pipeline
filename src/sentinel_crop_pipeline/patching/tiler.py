@@ -87,6 +87,10 @@ def run_patching(cfg: dict, logger=None) -> list[dict]:
     stride = int(pcfg.get("stride", size))
     block_factor = int(pcfg.get("block_factor", 4))
     max_invalid = float(pcfg.get("max_invalid_frac", 0.4))
+    require_field_mask = bool(pcfg.get("require_field_mask", False))
+    min_field_fraction = float(pcfg.get("min_field_fraction", 0.0))
+    if not 0 <= min_field_fraction <= 1:
+        raise ValueError("patching.min_field_fraction must be between 0 and 1")
     export_format = str(pcfg.get("export_format", "npy")).lower()
     cog_dir = Path(pcfg.get("cog_dir", "data/patches/cog"))
     train_dir = Path(pcfg.get("train_dir", "data/patches/train"))
@@ -96,14 +100,26 @@ def run_patching(cfg: dict, logger=None) -> list[dict]:
                           .get("out_dir", "data/interim")).glob("*.tif"))
     records: list[dict] = []
     skipped = 0
+    skipped_field = 0
 
     for tif in interim:
         with rasterio.open(tif) as src:
             names = [d or f"band_{i}" for i, d in enumerate(src.descriptions, 1)]
             mask_index = names.index("MASK") if "MASK" in names else None
+            field_index = names.index("FIELD_MASK") if "FIELD_MASK" in names else None
+            if (require_field_mask or min_field_fraction > 0) and field_index is None:
+                raise ValueError(f"{tif}: FIELD_MASK required; preprocess with field_mask_path first")
+            if field_index is not None and mask_index is None:
+                raise ValueError(f"{tif}: FIELD_MASK requires a combined MASK band")
             for row, col in iter_windows(src.width, src.height, size, stride):
                 win = Window(col, row, size, size)
                 arr = src.read(window=win)
+                if field_index is not None:
+                    if np.any((arr[mask_index] > 0) & (arr[field_index] <= 0)):
+                        raise ValueError(f"{tif}: valid pixels found outside FIELD_MASK")
+                    if float(np.mean(arr[field_index] > 0)) < min_field_fraction:
+                        skipped_field += 1
+                        continue
                 invalid = _invalid_frac(arr, mask_index)
                 if invalid > max_invalid:
                     skipped += 1
@@ -155,6 +171,7 @@ def run_patching(cfg: dict, logger=None) -> list[dict]:
         blocks = len({r["spatial_block_id"] for r in records})
         logger.set_summary(scenes=len(interim), patches_accepted=len(records),
                            patches_skipped_invalid=skipped,
+                           patches_skipped_field_coverage=skipped_field,
                            spatial_blocks=blocks, split_counts=counts,
                            index_file=str(index_file))
     return records

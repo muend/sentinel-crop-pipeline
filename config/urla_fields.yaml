@@ -1,0 +1,61 @@
+# Field-only workflow. Put reviewed private WGS84 field polygons in the path below.
+# No network stage should be run without approval for its area/date scope.
+project_name: sentinel-crop-pipeline-fields
+data_provider: cdse
+aoi:
+  path: data/aoi/local/fields.geojson
+  min_scene_overlap_pct: 60
+time:
+  start: "2026-06-10"
+  end: "2026-06-10"
+  crop: null
+  crop_calendar: config/crop_calendar.yaml
+search:
+  collection: sentinel-2-l2a
+  max_cloud_cover_pct: 20
+scl_filter:
+  enabled: true
+  max_invalid_pct: 30
+  invalid_classes: [0, 1, 3, 8, 9, 10, 11]
+ai_review:
+  judge_provider: none
+bands:
+  base: [B02, B03, B04, B08]
+  extra: []
+download:
+  field_only: true
+  method: process_api
+  resolution_m: 10
+  max_auto_size_mb: 10
+  out_dir: data/raw/fields
+preprocessing:
+  field_mask_path: data/aoi/local/fields.geojson
+  resampling: nearest
+  normalization: reflectance
+  indices: [NDVI]
+  out_dir: data/interim/fields
+patching:
+  require_field_mask: true
+  min_field_fraction: 1.0
+  patch_size: 256
+  stride: 256
+  block_factor: 4
+  max_invalid_frac: 0.4
+  export_format: npy
+  cog_dir: data/patches/fields/cog
+  train_dir: data/patches/fields/train
+  index_file: data/patches/fields/index.csv
+labeling:
+  source: vector
+  vector_path: data/labels/parcels.geojson
+  attribute: crop_type
+  out_dir: data/patches/fields/labels
+  all_touched: false
+split:
+  train: 0.70
+  val: 0.15
+  test: 0.15
+  seed: 42
+logging:
+  dir: logs/fields
+  level: INFO
