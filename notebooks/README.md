@@ -19,4 +19,34 @@ Candidate points are not field polygons. Confirm a dated reference, neighborhood
 
 The Process API request filters a full UTC day, not an exact STAC item. The provenance record therefore treats the selected catalog item as a candidate reference rather than a verified exclusive source product.
 
+## Check a private field against a dated reference
+
+`colab_field_check.py` reads one private GeoJSON polygon with a `field_id`,
+`map_address`, and an interior `reference_longitude`/`reference_latitude` point.
+Supply a reference view date yourself. No real field coordinates are embedded
+in the script.
+
+```bash
+python notebooks/colab_field_check.py --aoi data/aoi/local/field.geojson --catalog-aoi data/aoi/urla_ilce_interim.geojson --reference-date YYYY-MM-DD
+```
+
+The default performs metadata search only: only the separate public catalog AOI
+is sent to CDSE; exact field filtering happens locally. This public search region
+is a provisional rectangle, not an official district boundary. The helper checks
+that it covers the requested review area.
+
+After approving location sharing with CDSE, add `--download` for one image with
+200 m of surrounding context at 10 m resolution. Load credentials from Colab
+Secrets into the environment first. The request then sends the field context to
+the Process API. A PNG compares the same RGB image with and without the draft
+boundary; raw pixels remain unchanged. The default output directory,
+`data/quicklooks/field_check/`, is ignored by Git. In Colab, set `--out-dir` to a
+private persistent Drive folder. Image, checksum, address/polygon provenance,
+and preview are saved there. Structural grid checks do not establish positional
+accuracy, crop identity, or dataset acceptance.
+
+Google Earth's historical timeline date can include imagery acquired earlier;
+keep this uncertainty in the reference record instead of treating the selected
+date as exact acquisition metadata.
+
 For classroom demonstration materials, see [`output/ders/`](../output/ders/). Their dates and counts describe the recorded historical demonstration.
