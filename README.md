@@ -213,6 +213,13 @@ python -m sentinel_crop_pipeline.cli discover --config config/default.yaml
 
 ## Validated live run
 
+For the newer Google Colab/Drive technical pilot, see
+[notebooks/README.md](notebooks/README.md). The notebooks include authentication,
+small-window download, checksum-verified persistence, and RGB preview.
+Their historical pilot AOI is not an approved agricultural study area. Verify
+field locations before collecting research imagery; field coordinates, boundary
+drafts, and private research notes remain local and are excluded from Git.
+
 For a smaller live trial over the interim Urla AOI, use the subset configuration:
 
 ```bash
